@@ -1,0 +1,197 @@
+{% extends 'store/base.html' %}
+{% block title %}Cart — LUXE{% endblock %}
+
+{% block extra_css %}
+<style>
+  .cart-wrap { max-width: 1100px; margin: 60px auto; padding: 0 40px; display: grid; grid-template-columns: 1fr 340px; gap: 40px; }
+  .cart-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 32px;
+    font-weight: 300;
+    margin-bottom: 28px;
+  }
+
+  .cart-items { display: flex; flex-direction: column; gap: 16px; }
+  .cart-item {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    transition: border-color .2s;
+  }
+  .cart-item:hover { border-color: var(--accent); }
+  .cart-item-img {
+    width: 80px; height: 80px;
+    border-radius: var(--radius);
+    object-fit: cover;
+    background: var(--light);
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; color: var(--border);
+    border: 1px solid var(--border);
+  }
+  .cart-item-img img { width: 80px; height: 80px; object-fit: cover; border-radius: var(--radius); }
+  .cart-item-info { flex: 1; }
+  .cart-item-name { font-family: 'Cormorant Garamond', serif; font-size: 17px; margin-bottom: 4px; }
+  .cart-item-price { font-size: 13px; color: var(--muted); }
+  .cart-item-qty {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .qty-btn {
+    background: var(--light);
+    border: none;
+    width: 32px; height: 32px;
+    cursor: pointer;
+    font-size: 16px;
+    color: var(--text);
+    transition: background .2s;
+  }
+  .qty-btn:hover { background: var(--border); }
+  .qty-val { font-size: 14px; font-weight: 500; min-width: 28px; text-align: center; }
+  .cart-item-sub { font-size: 16px; font-weight: 500; min-width: 80px; text-align: right; }
+  .cart-remove {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    width: 32px; height: 32px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 14px;
+    transition: all .2s;
+  }
+  .cart-remove:hover { border-color: #ef4444; color: #ef4444; }
+
+  .cart-summary {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    height: fit-content;
+    position: sticky;
+    top: 80px;
+  }
+  .summary-title { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 300; margin-bottom: 24px; }
+  .summary-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    margin-bottom: 12px;
+    color: var(--muted);
+  }
+  .summary-row.total {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--text);
+    padding-top: 16px;
+    margin-top: 8px;
+    border-top: 1px solid var(--border);
+  }
+  .summary-row.total span:last-child { color: var(--accent); }
+  .checkout-btn { width: 100%; justify-content: center; margin-top: 20px; padding: 14px; }
+  .summary-note { font-size: 11px; color: var(--muted); text-align: center; margin-top: 12px; letter-spacing: .04em; }
+
+  .empty-cart { text-align: center; padding: 100px 0; grid-column: 1 / -1; }
+  .empty-cart .icon { font-size: 60px; margin-bottom: 20px; color: var(--border); }
+  .empty-cart h2 { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 300; margin-bottom: 10px; }
+  .empty-cart p { color: var(--muted); margin-bottom: 28px; font-size: 14px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cart-wrap">
+
+  {% if items %}
+  <div>
+    <h1 class="cart-title">Your Cart</h1>
+    <div class="cart-items" id="cart-items">
+      {% for item in items %}
+      <div class="cart-item" id="item-{{ item.product.pk }}">
+        <div class="cart-item-img">
+          {% if item.product.image_url %}
+          <img src="{{ item.product.image_url }}" alt="{{ item.product.name }}"/>
+          {% else %}◈{% endif %}
+        </div>
+        <div class="cart-item-info">
+          <a href="{% url 'product_detail' item.product.pk %}">
+            <div class="cart-item-name">{{ item.product.name }}</div>
+          </a>
+          <div class="cart-item-price">₹{{ item.product.price }} each</div>
+        </div>
+        <div class="cart-item-qty">
+          <button class="qty-btn" onclick="updateQty({{ item.product.pk }}, {{ item.quantity }} - 1)">−</button>
+          <span class="qty-val" id="qty-{{ item.product.pk }}">{{ item.quantity }}</span>
+          <button class="qty-btn" onclick="updateQty({{ item.product.pk }}, {{ item.quantity }} + 1)">+</button>
+        </div>
+        <div class="cart-item-sub" id="sub-{{ item.product.pk }}">₹{{ item.subtotal }}</div>
+        <button class="cart-remove" onclick="removeItem({{ item.product.pk }})" title="Remove">✕</button>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="cart-summary">
+    <div class="summary-title">Order Summary</div>
+    <div class="summary-row"><span>Subtotal</span><span id="summary-sub">₹{{ total }}</span></div>
+    <div class="summary-row"><span>Shipping</span><span>{% if total >= 999 %}Free{% else %}₹99{% endif %}</span></div>
+    <div class="summary-row total"><span>Total</span><span id="summary-total">₹{% if total >= 999 %}{{ total }}{% else %}{{ total|add:99 }}{% endif %}</span></div>
+    <a href="{% url 'checkout' %}" class="btn btn-gold checkout-btn">Proceed to Checkout →</a>
+    <p class="summary-note">Free shipping above ₹999 · Secure checkout</p>
+  </div>
+
+  {% else %}
+  <div class="empty-cart">
+    <div class="icon">🛍</div>
+    <h2>Your cart is empty</h2>
+    <p>Looks like you haven't added anything yet.</p>
+    <a href="{% url 'products' %}" class="btn btn-dark">Start Shopping →</a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function updateQty(pid, newQty) {
+    fetch(`/api/cart/update/${pid}/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCookie('csrftoken')
+      },
+      body: JSON.stringify({ quantity: newQty })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (newQty < 1) {
+        document.getElementById(`item-${pid}`)?.remove();
+      } else {
+        document.getElementById(`qty-${pid}`).textContent = newQty;
+      }
+      document.getElementById('cart-badge').textContent = data.cart_count;
+      location.reload();
+    });
+  }
+
+  function removeItem(pid) {
+    fetch(`/api/cart/remove/${pid}/`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': getCookie('csrftoken') }
+    })
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById(`item-${pid}`)?.remove();
+      document.getElementById('cart-badge').textContent = data.cart_count;
+      location.reload();
+    });
+  }
+</script>
+{% endblock %}

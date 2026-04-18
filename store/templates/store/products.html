@@ -1,0 +1,180 @@
+{% extends 'store/base.html' %}
+{% block title %}Shop — LUXE{% endblock %}
+
+{% block extra_css %}
+<style>
+  .page-header {
+    background: var(--dark);
+    padding: 50px 40px;
+    border-bottom: 1px solid rgba(200,169,110,.15);
+  }
+  .page-header h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 42px;
+    font-weight: 300;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+  .page-header p { font-size: 13px; color: rgba(255,255,255,.4); letter-spacing: .08em; }
+
+  .shop-layout { display: flex; gap: 40px; padding: 48px 40px; max-width: 1280px; margin: 0 auto; }
+
+  .sidebar { width: 220px; flex-shrink: 0; }
+  .sidebar-title {
+    font-size: 10px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+  .filter-list { list-style: none; }
+  .filter-list li a {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 12px;
+    font-size: 13px;
+    color: var(--muted);
+    border-radius: var(--radius);
+    transition: all .2s;
+    margin-bottom: 2px;
+  }
+  .filter-list li a:hover, .filter-list li a.active {
+    background: #fdf8f0;
+    color: var(--accent);
+  }
+  .filter-divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+  .products-area { flex: 1; }
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+  }
+  .result-count { font-size: 13px; color: var(--muted); }
+  .result-count span { color: var(--text); font-weight: 500; }
+  .search-bar {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .search-bar input {
+    padding: 8px 14px;
+    font-size: 13px;
+    border: none;
+    outline: none;
+    font-family: 'DM Sans', sans-serif;
+    background: var(--surface);
+    color: var(--text);
+    width: 200px;
+  }
+  .search-bar button {
+    background: var(--dark);
+    border: none;
+    color: var(--accent);
+    padding: 8px 14px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .no-results { text-align: center; padding: 80px 0; color: var(--muted); }
+  .no-results .icon { font-size: 48px; margin-bottom: 16px; }
+  .no-results p { font-family: 'Cormorant Garamond', serif; font-size: 22px; color: var(--text); }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div class="container">
+    <h1>{% if active_category %}{{ active_category.name }}{% elif search %}Search: "{{ search }}"{% else %}All Products{% endif %}</h1>
+    <p>{{ products|length }} product{{ products|length|pluralize }} found</p>
+  </div>
+</div>
+
+<div class="shop-layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-title">Categories</div>
+    <ul class="filter-list">
+      <li>
+        <a href="{% url 'products' %}" class="{% if not active_category and not search %}active{% endif %}">
+          All Products <span>◈</span>
+        </a>
+      </li>
+      {% for cat in categories %}
+      <li>
+        <a href="{% url 'products' %}?category={{ cat.slug }}"
+           class="{% if active_category.slug == cat.slug %}active{% endif %}">
+          {{ cat.name }}
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+
+    <hr class="filter-divider"/>
+
+    <div class="sidebar-title">Quick Links</div>
+    <ul class="filter-list">
+      <li><a href="{% url 'cart' %}">🛍 My Cart</a></li>
+      <li><a href="{% url 'checkout' %}">✓ Checkout</a></li>
+    </ul>
+  </aside>
+
+  <!-- Products -->
+  <div class="products-area">
+    <div class="toolbar">
+      <div class="result-count"><span>{{ products|length }}</span> products</div>
+      <form class="search-bar" action="{% url 'products' %}" method="GET">
+        {% if active_category %}<input type="hidden" name="category" value="{{ active_category.slug }}"/>{% endif %}
+        <input type="text" name="q" placeholder="Search..." value="{{ search }}"/>
+        <button type="submit">⌕</button>
+      </form>
+    </div>
+
+    {% if products %}
+    <div class="product-grid">
+      {% for product in products %}
+      <div class="product-card">
+        <a href="{% url 'product_detail' product.pk %}">
+          {% if product.image_url %}
+          <img src="{{ product.image_url }}" alt="{{ product.name }}" class="product-img"/>
+          {% else %}
+          <div class="product-img-placeholder">◈</div>
+          {% endif %}
+        </a>
+        <div class="product-info">
+          <div class="product-cat">{{ product.category.name|default:"General" }}</div>
+          <a href="{% url 'product_detail' product.pk %}">
+            <div class="product-name">{{ product.name }}</div>
+          </a>
+          <div class="product-price">
+            <span class="price-main">₹{{ product.price }}</span>
+            {% if product.original_price %}
+            <span class="price-old">₹{{ product.original_price }}</span>
+            <span class="price-badge">-{{ product.discount_percent }}%</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="product-actions">
+          <button class="btn btn-dark" onclick="addToCart({{ product.pk }})">Add to Cart</button>
+          <a href="{% url 'product_detail' product.pk %}" class="btn btn-outline">View</a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="no-results">
+      <div class="icon">◈</div>
+      <p>No products found</p>
+      <br/>
+      <a href="{% url 'products' %}" class="btn btn-outline">Clear filters</a>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
+{% endblock %}

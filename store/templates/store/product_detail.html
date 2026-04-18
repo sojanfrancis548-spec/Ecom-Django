@@ -1,0 +1,163 @@
+{% extends 'store/base.html' %}
+{% block title %}{{ product.name }} — LUXE{% endblock %}
+
+{% block extra_css %}
+<style>
+  .detail-wrap { max-width: 1200px; margin: 60px auto; padding: 0 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; }
+  .detail-img-box {
+    background: var(--light);
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    aspect-ratio: 1;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .detail-img-box img { width: 100%; height: 100%; object-fit: cover; }
+  .detail-img-placeholder { font-size: 80px; color: var(--border); }
+
+  .detail-info { padding: 10px 0; }
+  .detail-cat {
+    font-size: 11px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 14px;
+  }
+  .detail-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 38px;
+    font-weight: 300;
+    line-height: 1.15;
+    color: var(--text);
+    margin-bottom: 24px;
+  }
+  .detail-price {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    margin-bottom: 24px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .detail-price-main { font-size: 32px; font-weight: 500; color: var(--text); }
+  .detail-price-old { font-size: 18px; color: var(--muted); text-decoration: line-through; }
+  .detail-badge {
+    font-size: 11px;
+    padding: 4px 10px;
+    background: #fef3e2;
+    color: #a8630a;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+  .detail-desc {
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--muted);
+    margin-bottom: 28px;
+  }
+  .detail-stock {
+    font-size: 12px;
+    letter-spacing: .08em;
+    margin-bottom: 24px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .stock-dot { width: 7px; height: 7px; border-radius: 50%; }
+  .in-stock .stock-dot { background: #22c55e; }
+  .out-stock .stock-dot { background: #ef4444; }
+  .detail-actions { display: flex; gap: 12px; margin-bottom: 32px; }
+  .detail-actions .btn { flex: 1; justify-content: center; padding: 14px; font-size: 13px; }
+
+  .detail-meta {
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .meta-row { display: flex; gap: 8px; }
+  .meta-row strong { color: var(--text); min-width: 80px; }
+
+  .related-section { padding: 60px 40px; background: var(--light); }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="detail-wrap">
+  <div class="detail-img-box">
+    {% if product.image_url %}
+    <img src="{{ product.image_url }}" alt="{{ product.name }}"/>
+    {% else %}
+    <div class="detail-img-placeholder">◈</div>
+    {% endif %}
+  </div>
+
+  <div class="detail-info">
+    <div class="detail-cat">{{ product.category.name|default:"General" }}</div>
+    <h1 class="detail-name">{{ product.name }}</h1>
+
+    <div class="detail-price">
+      <span class="detail-price-main">₹{{ product.price }}</span>
+      {% if product.original_price %}
+      <span class="detail-price-old">₹{{ product.original_price }}</span>
+      <span class="detail-badge">Save {{ product.discount_percent }}%</span>
+      {% endif %}
+    </div>
+
+    <p class="detail-desc">{{ product.description }}</p>
+
+    <div class="detail-stock {% if product.in_stock %}in-stock{% else %}out-stock{% endif %}">
+      <span class="stock-dot"></span>
+      {% if product.in_stock %}In Stock ({{ product.stock }} available){% else %}Out of Stock{% endif %}
+    </div>
+
+    {% if product.in_stock %}
+    <div class="detail-actions">
+      <button class="btn btn-gold" onclick="addToCart({{ product.pk }})">Add to Cart</button>
+      <a href="{% url 'cart' %}" class="btn btn-dark">View Cart →</a>
+    </div>
+    {% else %}
+    <div style="color:var(--muted);font-size:13px;margin-bottom:28px;">This product is currently unavailable.</div>
+    {% endif %}
+
+    <div class="detail-meta">
+      <div class="meta-row"><strong>SKU:</strong> LUXE-{{ product.pk|stringformat:"04d" }}</div>
+      {% if product.category %}<div class="meta-row"><strong>Category:</strong> {{ product.category.name }}</div>{% endif %}
+      <div class="meta-row"><strong>Shipping:</strong> Free above ₹999</div>
+      <div class="meta-row"><strong>Returns:</strong> 30-day easy returns</div>
+    </div>
+  </div>
+</div>
+
+{% if related %}
+<section class="related-section">
+  <div class="container">
+    <div class="section-sub">You May Also Like</div>
+    <div class="section-title" style="margin-bottom:40px;">Related Products</div>
+    <div class="product-grid">
+      {% for p in related %}
+      <div class="product-card">
+        <a href="{% url 'product_detail' p.pk %}">
+          {% if p.image_url %}<img src="{{ p.image_url }}" alt="{{ p.name }}" class="product-img"/>
+          {% else %}<div class="product-img-placeholder">◈</div>{% endif %}
+        </a>
+        <div class="product-info">
+          <div class="product-cat">{{ p.category.name|default:"" }}</div>
+          <a href="{% url 'product_detail' p.pk %}"><div class="product-name">{{ p.name }}</div></a>
+          <div class="product-price">
+            <span class="price-main">₹{{ p.price }}</span>
+            {% if p.original_price %}<span class="price-old">₹{{ p.original_price }}</span>{% endif %}
+          </div>
+        </div>
+        <div class="product-actions">
+          <button class="btn btn-dark" onclick="addToCart({{ p.pk }})">Add to Cart</button>
+          <a href="{% url 'product_detail' p.pk %}" class="btn btn-outline">View</a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{% endblock %}
