@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<style>
+  /* paste same CSS from login.html here */
+  .name-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .luxe-check {
+    width: 14px; height: 14px; border: 1px solid #2a2218;
+    background: #0a0a0a; appearance: none; cursor: pointer; margin-top: 2px; flex-shrink: 0;
+  }
+  .luxe-check:checked { background: #c9a84c; border-color: #c9a84c; }
+</style>
+
+<div class="luxe-page">
+  <div class="bg-ring" style="width:500px;height:500px;top:50%;left:50%;transform:translate(-50%,-50%);"></div>
+
+  <div class="card">
+    <div class="card-corner cc-tl"></div>
+    <div class="card-corner cc-tr"></div>
+    <div class="card-corner cc-bl"></div>
+    <div class="card-corner cc-br"></div>
+
+    <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:28px;">
+      <div style="position:relative;width:56px;height:56px;">
+        <div class="logo-ring-outer"></div>
+        <div class="logo-ring-mid"></div>
+        <div class="logo-inner">L</div>
+      </div>
+      <div class="brand-title">LUXE</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+        <div class="div-line"></div>
+        <div class="div-diamond"></div>
+        <div class="div-line"></div>
+      </div>
+      <div class="form-title">CREATE YOUR ACCOUNT</div>
+    </div>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="error-msg">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <form method="POST" action="{% url 'register' %}">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.GET.next }}" />
+
+      <div class="name-row">
+        <div>
+          <label class="field-label">FIRST NAME</label>
+          <input class="luxe-input" type="text" name="first_name" placeholder="John" required />
+        </div>
+        <div>
+          <label class="field-label">LAST NAME</label>
+          <input class="luxe-input" type="text" name="last_name" placeholder="Doe" required />
+        </div>
+      </div>
+
+      <label class="field-label">EMAIL ADDRESS</label>
+      <input class="luxe-input" type="email" name="email" placeholder="your@email.com" required />
+
+      <label class="field-label">PASSWORD</label>
+      <input class="luxe-input" type="password" name="password1" placeholder="••••••••••" required />
+
+      <label class="field-label">CONFIRM PASSWORD</label>
+      <input class="luxe-input" type="password" name="password2" placeholder="••••••••••" required />
+
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:16px;">
+        <input type="checkbox" class="luxe-check" name="terms" required />
+        <span style="font-size:10px;color:#3a3020;letter-spacing:1px;line-height:1.6;">
+          I agree to the <a href="#" class="gold-link">Terms of Service</a> and <a href="#" class="gold-link">Privacy Policy</a>
+        </span>
+      </div>
+
+      <button type="submit" class="luxe-btn">CREATE ACCOUNT</button>
+    </form>
+
+    <div class="link-text">
+      ALREADY A MEMBER? <a href="{% url 'login' %}" class="gold-link">SIGN IN</a>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

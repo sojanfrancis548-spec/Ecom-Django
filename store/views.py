@@ -2,6 +2,8 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.contrib import messages
 from django.views.decorators.http import require_POST
+from django.contrib.auth import login, authenticate
+from django.contrib.auth.models import User
 from .models import Product, Category, CartItem, Order, OrderItem
 import json
 
@@ -144,3 +146,55 @@ def update_cart(request, pk):
     items = CartItem.objects.filter(session_key=sk).select_related('product')
     total = sum(item.subtotal for item in items)
     return JsonResponse({'success': True, 'cart_count': items.count(), 'total': float(total)})
+
+
+# ── Auth Views ──
+
+def register_view(request):
+    if request.method == 'POST':
+        first_name = request.POST['first_name']
+        last_name = request.POST['last_name']
+        email = request.POST['email']
+        password1 = request.POST['password1']
+        password2 = request.POST['password2']
+        next_url = request.POST.get('next') or request.GET.get('next')
+
+        if password1 != password2:
+            messages.error(request, 'PASSWORDS DO NOT MATCH')
+            return redirect('register')
+
+        if User.objects.filter(email=email).exists():
+            messages.error(request, 'EMAIL ALREADY REGISTERED')
+            return redirect('register')
+
+        user = User.objects.create_user(
+            username=email, email=email,
+            password=password1,
+            first_name=first_name, last_name=last_name
+        )
+        login(request, user)
+        return redirect(next_url or 'home')
+
+    return render(request, 'store/register.html')
+
+
+def login_view(request):
+    if request.method == 'POST':
+        email = request.POST['email']
+        password = request.POST['password']
+        next_url = request.POST.get('next') or request.GET.get('next')
+        user = authenticate(request, username=email, password=password)
+        if user:
+            login(request, user)
+            return redirect(next_url or 'home')
+        else:
+            messages.error(request, 'INVALID CREDENTIALS')
+            return redirect('login')
+
+    return render(request, 'store/login.html')
+
+
+def logout_view(request):
+    from django.contrib.auth import logout
+    logout(request)
+    return redirect('home')
